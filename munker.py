@@ -4,15 +4,12 @@ from scipy import special
 import random
 import math
 
-circle_list = []
-b_coef = 0
-
 # Returns the nearest multiple of `m` that is lower than `n`
 def nearest_multiple(n, m):
     return ((n - m) | (m - 1)) + 1
 
 # Returns a tuple (x, y) where (x, y) is the `nth` pair with collection size of `s`
-def get_tuple(n, s):
+def get_tuple(n, s, b_coef):
     # Initial value for (x, y) is (0, 1)
     x, y = 0, 1
 
@@ -32,21 +29,23 @@ def get_tuple(n, s):
     return (x, y)
 
 # TODO: implement a faster generator, avoiding collisions (pref. by spliting the image into sectors first)
-# Generates a random coordinate on the image of size `size` with at least `c_size` pixels away from all
-# generated coordinates in the `circle_list` and returns the generated coordinate
-def gen_coord(size, c_size):
-    global circle_list
+# Generates `count` random coordinates on the image of size `size` with at least `c_size` pixels away from all
+# generated coordinates in `circle_list` and returns the generated list
+def generate_circles(count, size, c_size, b_coef):
+    circle_list = []
 
-    # Generates a random coordinate inside the bounding box of the image
-    while True:
-        rx, ry = random.randint(0, size[0] - c_size - 1), random.randint(0, size[1] - c_size - 1)
+    for i in range(count):
+        while True:
+            rx, ry = random.randint(0, size[0] - c_size - 1), random.randint(0, size[1] - c_size - 1)
 
-        # Adds the generated coordinate to the `circle_list` if it is far enough from all other circles on the list
-        if check_box_col(rx, ry, c_size) == False:
-            temp_len = len(circle_list)
-            circle_list.append((rx, ry, temp_len % b_coef))
-            
-            return rx, ry
+            # Adds the generated coordinate to the `circle_list` if it is far enough from all other circles on the list
+            if check_box_col(rx, ry, c_size, circle_list) == False:
+                temp_len = len(circle_list)
+                circle_list.append((rx, ry, temp_len % b_coef))
+                
+                break
+    
+    return circle_list
 
 # TODO: create a faster collision function
 # Unused for now
@@ -63,7 +62,7 @@ def check_col(x, y, r):
 # Temporarily using box collision instead of the circle collision function
 # Checks if there is a generated circle inside the bounding box of the generated coordinate.
 # Returns True if a collision is found
-def check_box_col(x, y, r):
+def check_box_col(x, y, r, circle_list):
     for c in circle_list:
         if (x + r < c[0] or x > c[0] + r) or (y + r < c[1] or y > c[1] + r):
             continue
@@ -80,9 +79,11 @@ def main(colors = [(255, 255, 0),
          c_color=(240, 180, 225),
          size=(500, 300),
          c_size=64,
-         count=4,
+         count=8,
          width=4):
-    global b_coef
+    
+    b_coef = 0
+    circle_list = []
 
     # Initial check if generation of `count` circles is possible inside the image with size `size`
     # Max value for `count` should be math.floor((size[0] * size[1]) / (3 * c_size * c_size)) for this random generator implementation
@@ -101,14 +102,14 @@ def main(colors = [(255, 255, 0),
         d.line((0, i * width, size[0], i * width), fill=colors[i % c_len], width=width)
 
     # Generates a coordinate and draw `count` circles with radius `c_size` of the color `c_color`
-    for i in range(count):
-        rx, ry = gen_coord(size, c_size)
-        d.ellipse([(rx, ry), (rx + c_size, ry + c_size)], fill=c_color)
+    circle_list = generate_circles(count, size, c_size, b_coef)
 
     # Draws crossing lines over the circles in `circle_list`. The colors of the crossing lines depends on the 3rd element of the tuple `c` in `circle_list`
     for c in circle_list:
+        d.ellipse([(c[0], c[1]), (c[0] + c_size, c[1] + c_size)], fill=c_color)
+        
         for i in range(int(math.floor(c_size / width)) + 1):
-            t = get_tuple(c[2], c_len)
+            t = get_tuple(c[2], c_len, b_coef)
             f = int((c[1] + (i * width)) / width) % c_len
             ny = nearest_multiple(c[1] + i * width, width)
 
