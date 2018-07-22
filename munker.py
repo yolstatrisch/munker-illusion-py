@@ -72,40 +72,50 @@ def check_box_col(x, y, r):
         
     return False
 
-def main(colors, count, c_color, s=(500, 300), w=4, c_size=64):
+# `width` parameter should not be changed. There is known bug with regards to the `width` param.
+def main(colors = [(255, 255, 0),
+                   (255, 0, 255),
+                   (0, 255, 255),
+                   (128, 128, 255)],
+         c_color=(240, 180, 225),
+         size=(500, 300),
+         c_size=64,
+         count=4,
+         width=4):
     global b_coef
+
+    # Initial check if generation of `count` circles is possible inside the image with size `size`
+    # Max value for `count` should be math.floor((size[0] * size[1]) / (3 * c_size * c_size)) for this random generator implementation
+    count = min(count, math.floor((size[0] * size[1]) / (3 * c_size * c_size)))
 
     # Init secondary params
     c_len = len(colors)
     b_coef = int(scipy.special.binom(c_len, 2))
 
     # Create the `Draw` object
-    im = Image.new('RGB', s, (255, 255, 255))
+    im = Image.new('RGB', size, (255, 255, 255))
     d = ImageDraw.Draw(im)
 
-    # Draw lines with alternating colors from `colors` and a width of `w`
-    for i in range(int(math.floor(s[1] / w))):
-        d.line((0, i * w, s[0], i * w), fill=colors[i % c_len], width=w)
+    # Draw lines with alternating colors from `colors` and a width of `width`
+    for i in range(int(math.floor(size[1] / width))):
+        d.line((0, i * width, size[0], i * width), fill=colors[i % c_len], width=width)
 
     # Generates a coordinate and draw `count` circles with radius `c_size` of the color `c_color`
     for i in range(count):
-        rx, ry = gen_coord(s, c_size)
+        rx, ry = gen_coord(size, c_size)
         d.ellipse([(rx, ry), (rx + c_size, ry + c_size)], fill=c_color)
 
     # Draws crossing lines over the circles in `circle_list`. The colors of the crossing lines depends on the 3rd element of the tuple `c` in `circle_list`
     for c in circle_list:
-        for i in range(int(math.floor(c_size / w)) + 1):
+        for i in range(int(math.floor(c_size / width)) + 1):
             t = get_tuple(c[2], c_len)
-            f = int((c[1] + (i * w)) / w) % c_len
-            ny = nearest_multiple(c[1] + i * w, 4)
+            f = int((c[1] + (i * width)) / width) % c_len
+            ny = nearest_multiple(c[1] + i * width, width)
 
             if f in t:
-                d.line((c[0], ny, c[0] + c_size, ny), fill=colors[f], width=w)
+                d.line((c[0], ny, c[0] + c_size, ny), fill=colors[f], width=width)
 
     im.show()
 
 if __name__ == '__main__':
-    main([(255, 255, 0),
-          (255, 0, 255),
-          (0, 255, 255),
-          (128, 128, 255)], 15, (240, 180, 225))
+    main()
