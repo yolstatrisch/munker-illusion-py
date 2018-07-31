@@ -1,8 +1,18 @@
+'''Usage: munker.py <filename> <size-x> <size-y> <circle-size> <circle-count>
+'''
+
 from PIL import Image, ImageDraw
 import scipy
 from scipy import special
+from docopt import docopt
 import random
 import math
+
+def is_num(s):
+    if s.isdigit():
+        return int(s)
+    else:
+        return None
 
 # Returns the nearest multiple of `m` that is lower than `n`
 def nearest_multiple(n, m):
@@ -42,9 +52,9 @@ def generate_circles(count, size, c_size, b_coef):
             if check_box_col(rx, ry, c_size, circle_list) == False:
                 temp_len = len(circle_list)
                 circle_list.append((rx, ry, temp_len % b_coef))
-                
+
                 break
-    
+
     return circle_list
 
 # TODO: create a faster collision function
@@ -56,7 +66,7 @@ def check_col(x, y, r):
 
         if dx * dx + dy * dy < r * r:
             return True
-        
+
     return False
 
 # Temporarily using box collision instead of the circle collision function
@@ -68,11 +78,11 @@ def check_box_col(x, y, r, circle_list):
             continue
         else:
             return True
-        
+
     return False
 
 # `width` parameter should not be changed. There is known bug with regards to the `width` param.
-def main(colors = [(255, 255, 0),
+def main(fileout = "image", colors = [(255, 255, 0),
                    (255, 0, 255),
                    (0, 255, 255),
                    (128, 128, 255)],
@@ -81,7 +91,7 @@ def main(colors = [(255, 255, 0),
          c_size=64,
          count=8,
          width=4):
-    
+
     b_coef = 0
     circle_list = []
 
@@ -107,7 +117,7 @@ def main(colors = [(255, 255, 0),
     # Draws crossing lines over the circles in `circle_list`. The colors of the crossing lines depends on the 3rd element of the tuple `c` in `circle_list`
     for c in circle_list:
         d.ellipse([(c[0], c[1]), (c[0] + c_size, c[1] + c_size)], fill=c_color)
-        
+
         for i in range(int(math.floor(c_size / width)) + 1):
             t = get_tuple(c[2], c_len, b_coef)
             f = int((c[1] + (i * width)) / width) % c_len
@@ -116,7 +126,12 @@ def main(colors = [(255, 255, 0),
             if f in t:
                 d.line((c[0], ny, c[0] + c_size, ny), fill=colors[f], width=width)
 
-    im.show()
+    im.save(fileout + ".jpg", "JPEG")
 
 if __name__ == '__main__':
-    main()
+    arg = docopt(__doc__)
+
+    main(fileout = arg['<filename>'],
+        size = (is_num(arg['<size-x>']), is_num(arg['<size-y>'])),
+        c_size = is_num(arg['<circle-size>']),
+        count = is_num(arg['<circle-count>']))
